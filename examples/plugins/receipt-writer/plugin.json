@@ -1,0 +1,5 @@
+{
+  "name": "receipt-writer",
+  "version": "0.1.0",
+  "description": "任务收尾回执：每个 run 结束自动写 Markdown+JSON 回执到 <OW_DATA>/receipts；另提供 write_receipt 工具手动补写"
+}

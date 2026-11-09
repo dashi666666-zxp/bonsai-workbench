@@ -1,0 +1,35 @@
+{
+  "name": "bonsai-workbench",
+  "version": "0.7.1",
+  "private": true,
+  "type": "module",
+  "description": "Bonsai Workbench —— 只连 llama.cpp / LLMpod 的本地 agent 工作台（独立于 Ollama 线）",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node test/smoke.mjs",
+    "bench": "node test/bench.mjs"
+  },
+  "license": "MIT",
+  "author": "dashi666666-zxp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dashi666666-zxp/bonsai-workbench.git"
+  },
+  "homepage": "https://github.com/dashi666666-zxp/bonsai-workbench#readme",
+  "bugs": {
+    "url": "https://github.com/dashi666666-zxp/bonsai-workbench/issues"
+  },
+  "keywords": [
+    "llama.cpp",
+    "llm",
+    "local-llm",
+    "agent",
+    "workbench",
+    "mcp",
+    "rag",
+    "bonsai"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

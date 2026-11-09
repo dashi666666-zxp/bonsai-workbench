@@ -1,0 +1,84 @@
+{
+  "model": "llama/bonsai-2-27b",
+  "think": true,
+  "permission": "full-access",
+  "approval": "auto",
+  "workspace": "",
+  "maxSteps": 200,
+  "temperature": 0.6,
+  "tokenSaver": {
+    "toolOutputMaxChars": 8000,
+    "toolOutputMaxLines": 200,
+    "historyBudgetChars": 48000,
+    "compactSchema": true
+  },
+  "mcpServers": {},
+  "agentsEnabled": true,
+  "maxAgents": 4,
+  "durable": true,
+  "webSearch": true,
+  "webSearchCount": 8,
+  "webSearchEngine": "auto",
+  "pluginsEnabled": true,
+  "skillsEnabled": true,
+  "skillsDirs": [],
+  "skillsInjectMaxChars": 6000,
+  "llamacpp": {
+    "enabled": true,
+    "mode": "external",
+    "host": "http://127.0.0.1:8080",
+    "autostart": false,
+    "apiKey": "",
+    "apiKeyFile": "",
+    "serverPath": "",
+    "modelPath": "",
+    "mmproj": "",
+    "cudartPath": "",
+    "extraArgs": "",
+    "alias": "bonsai-2-27b",
+    "startTimeoutMs": 180000
+  },
+  "rag": {
+    "enabled": true,
+    "autoRetrieve": true,
+    "citeRequired": true,
+    "root": "",
+    "topK": 6,
+    "maxChars": 5200,
+    "chunkSize": 700,
+    "overlap": 120,
+    "minSize": 200,
+    "maxFiles": 1500,
+    "maxChunks": 5000,
+    "maxFileBytes": 1500000,
+    "include": []
+  },
+  "ctx": {
+    "enabled": true,
+    "ratio": 0.5,
+    "keepRecent": 10,
+    "summaryChars": 1200,
+    "maxSourceChars": 14000,
+    "minMessages": 8
+  },
+  "thinking": {
+    "enabled": true,
+    "planCall": true,
+    "maxPlanSteps": 5,
+    "planMaxTokens": 180,
+    "planTimeoutMs": 30000,
+    "requireSelfCheck": false
+  },
+  "memory": {
+    "enabled": true,
+    "injectMaxChars": 2200,
+    "userMaxChars": 500,
+    "memoryMaxChars": 700,
+    "keyMaxChars": 900,
+    "daily": true,
+    "injectProject": false
+  },
+  "receipt": {
+    "enabled": true
+  }
+}

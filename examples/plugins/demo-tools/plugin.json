@@ -1,0 +1,7 @@
+{
+  "name": "demo-tools",
+  "version": "0.1.0",
+  "description": "示例插件：当前时间 + sha256。拷到 <OW_DATA>/plugins/demo-tools/ 即可被工作台加载。",
+  "main": "index.mjs",
+  "enabled": true
+}

@@ -1,0 +1,10 @@
+# 本地个人配置（端点 / 本机路径 / 密钥文件位置），仓库只提交脱敏样例
+bonsai.config.json
+
+# 探针与临时工作目录（浏览器缓存、rag 跑批、日志转储）
+_scratch/
+
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bonsai Workbench</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div id="app">
+
+  <header id="topbar">
+    <div class="brand">
+      <span class="mark">◈</span>
+      <span class="name">Bonsai Workbench</span>
+      <span class="ver" id="version">v—</span>
+    </div>
+
+    <div class="conn" id="conn" title="llama.cpp 端点状态">
+      <span class="dot" id="conn-dot"></span>
+      <span id="conn-text">端点检测中…</span>
+    </div>
+
+    <div class="picks">
+      <label class="pick">
+        <span>模型</span>
+        <select id="model-select" title="llama.cpp / LLMpod 端点当前提供的模型"></select>
+      </label>
+      <label class="pick check" title="llama.cpp jinja 模板默认开思考；关闭可显著缩短 27B 的首答时间">
+        <input type="checkbox" id="think" />
+        <span>思考</span>
+      </label>
+      <label class="pick check" title="联网搜索：勾选后模型可调用 web_search 取实时信息；搜索后端在设置里选">
+        <input type="checkbox" id="websearch" />
+        <span>联网</span>
+      </label>
+      <label class="pick">
+        <span>权限</span>
+        <select id="perm">
+          <option value="read-only">只读</option>
+          <option value="workspace-write">工作区写</option>
+          <option value="full-access">完全访问</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="acts">
+      <button class="btn ghost" id="btn-receipts" title="任务收尾回执">回执</button>
+      <button class="btn ghost" id="btn-settings" title="端点、工作区、MCP、插件与技能">设置</button>
+      <button class="btn danger" id="btn-stop" disabled>停止</button>
+    </div>
+  </header>
+
+  <aside id="sidebar">
+    <div class="side-hd">
+      <span>会话</span>
+      <button class="mini" id="btn-new-session" title="新建会话">＋ 新建</button>
+    </div>
+    <div id="session-list" class="list"></div>
+
+    <div class="side-hd">
+      <span>最近运行</span>
+      <span class="hint" id="run-count"></span>
+    </div>
+    <div id="run-list" class="list small"></div>
+
+    <div class="side-foot">
+      <div class="kv"><span>数据</span><code id="data-dir">—</code></div>
+      <div class="kv"><span>工作区</span><code id="work-dir">—</code></div>
+    </div>
+  </aside>
+
+  <main id="chat">
+    <div id="messages" class="messages"></div>
+
+    <div id="composer">
+      <div id="attach-bar" class="attach-bar" hidden></div>
+      <div class="composer-row">
+        <button class="btn ghost" id="btn-attach" type="button" title="添加图片（也可直接粘贴或拖入，最多 4 张）">＋图</button>
+        <input type="file" id="file-input" accept="image/*" multiple hidden />
+        <textarea id="input" rows="1" placeholder="给 Bonsai 一个任务…（Enter 发送，Shift+Enter 换行；可粘贴/拖入图片；运行中发送 = 追加要求）"></textarea>
+        <button class="btn primary" id="btn-send">发送</button>
+      </div>
+      <div class="composer-foot">
+        <span id="run-state">就绪</span>
+        <span class="spacer"></span>
+        <span id="ctx-info">ctx —</span>
+        <span id="tool-count">工具 —</span>
+      </div>
+    </div>
+  </main>
+
+  <aside id="console">
+    <section class="card" id="panel-run">
+      <div class="card-hd"><span>运行面板</span><span class="badge" id="run-badge">idle</span></div>
+      <div class="card-bd">
+        <div class="kv"><span>端点</span><code id="c-endpoint">—</code></div>
+        <div class="kv"><span>模型</span><code id="c-model">—</code></div>
+        <div class="kv"><span>上下文</span><code id="c-ctx">—</code></div>
+        <div class="kv"><span>启动参数</span><code id="c-args" class="wrap">—</code></div>
+        <div class="kv"><span>pid</span><code id="c-pid">—</code></div>
+        <div class="run-ctrl">
+          <button class="mini" id="btn-llama-start">启动端点</button>
+          <button class="mini" id="btn-llama-stop">停止端点</button>
+        </div>
+
+        <div class="stat-grid">
+          <div><b id="m-step">—</b><span>步</span></div>
+          <div><b id="m-tokens">—</b><span>生成 tok</span></div>
+          <div><b id="m-tps">—</b><span>tok/s</span></div>
+          <div><b id="m-total">—</b><span>总耗时</span></div>
+        </div>
+        <div class="timing" id="timing">首字 — · 首答 — · 总 —</div>
+
+        <div class="sub-hd">工具调用</div>
+        <div id="tool-stream" class="stream"></div>
+      </div>
+    </section>
+
+    <section class="card" id="panel-receipts">
+      <div class="card-hd"><span>回执</span><span class="hint" id="receipt-count"></span></div>
+      <div class="card-bd">
+        <div id="receipt-list" class="list small"></div>
+        <pre id="receipt-view" class="receipt-view" hidden></pre>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<!-- 设置 -->
+<div class="modal" id="modal-settings" hidden>
+  <div class="modal-card">
+    <div class="modal-hd">
+      <span>设置</span>
+      <button class="mini" id="btn-close-settings">关闭</button>
+    </div>
+    <div class="modal-bd">
+      <p class="note">Bonsai 线只连 OpenAI 兼容的 <code>/v1</code> 端点：本机 llama.cpp（工作台托管）或 LLMpod 网关。不读 Ollama。</p>
+
+      <h3>llama.cpp 端点</h3>
+      <div class="fld-row">
+        <label class="fld"><span>端点模式</span><select id="f-endpointMode">
+          <option value="external">外部端点（连别人起的 /v1）</option>
+          <option value="managed">本机托管（工作台拉起 llama-server）</option>
+        </select></label>
+        <button class="btn ghost" id="btn-apply-mode" title="按所选模式写入预设字段，并尝试连上 / 拉起端点">应用模式</button>
+      </div>
+      <p class="note" id="mode-note">切换模式只改端点相关字段（Host / 自启 / 路径 / 额外参数 / key），不碰模型与工具设置。</p>
+      <label class="fld"><span>Host（含端口）</span><input id="f-host" placeholder="http://127.0.0.1:8082" /></label>
+      <label class="fld checkline"><input type="checkbox" id="f-autostart" /><span>本机托管：端点不通时自动拉起 llama-server</span></label>
+      <label class="fld"><span>llama-server 路径</span><input id="f-serverPath" placeholder="D:\llm\runtime\...\llama-server.exe" /></label>
+      <label class="fld"><span>GGUF 模型路径</span><input id="f-modelPath" placeholder="D:\llm\models\...\model.gguf" /></label>
+      <label class="fld"><span>视觉投影 mmproj（可空）</span><input id="f-mmproj" placeholder="D:\llm\models\...\mmproj.gguf" /></label>
+      <label class="fld"><span>cudart 目录（CUDA 运行时，可空）</span><input id="f-cudartPath" placeholder="D:\llm\runtime\cudart-..." /></label>
+      <label class="fld"><span>额外启动参数</span><input id="f-extraArgs" placeholder="-ngl 99 -fa on -c 16384 -ctk q8_0 -ctv q8_0 --jinja -np 1" /></label>
+
+      <h3>运行</h3>
+      <label class="fld"><span>工作区</span><input id="f-workspace" /></label>
+      <div class="fld-row">
+        <label class="fld"><span>权限</span>
+          <select id="f-permission">
+            <option value="read-only">只读</option>
+            <option value="workspace-write">工作区写</option>
+            <option value="full-access">完全访问</option>
+          </select>
+        </label>
+        <label class="fld"><span>审批</span>
+          <select id="f-approval">
+            <option value="auto">自动</option>
+            <option value="ask">逐条询问</option>
+          </select>
+        </label>
+      </div>
+      <div class="fld-row">
+        <label class="fld"><span>最大步数</span><input id="f-maxSteps" type="number" min="1" max="200" /></label>
+        <label class="fld"><span>temperature</span><input id="f-temperature" type="number" step="0.05" min="0" max="2" /></label>
+      </div>
+
+      <h3>能力开关</h3>
+      <div class="fld-row">
+        <label class="fld checkline"><input type="checkbox" id="f-pluginsEnabled" /><span>插件</span></label>
+        <label class="fld checkline"><input type="checkbox" id="f-skillsEnabled" /><span>技能</span></label>
+        <label class="fld checkline"><input type="checkbox" id="f-agentsEnabled" /><span>子智能体</span></label>
+        <label class="fld checkline"><input type="checkbox" id="f-webSearch" /><span>联网搜索</span></label>
+      </div>
+      <div class="fld-row">
+        <label class="fld"><span>搜索后端</span><select id="f-webSearchEngine">
+          <option value="auto">自动（记住上次成功的后端）</option>
+          <option value="bing">Bing</option>
+          <option value="duckduckgo">DuckDuckGo</option>
+        </select></label>
+      </div>
+
+      <h3>知识库（RAG）</h3>
+      <p class="note">把本地文档切块建索引；提问前按关键词召回资料注入上下文，答案必须带 [S#] 出处，减少凭空编造。</p>
+      <label class="fld"><span>知识库目录（留空 = 工作区）</span><input id="f-ragRoot" placeholder="留空则索引工作区" /></label>
+      <div class="fld-row">
+        <label class="fld checkline"><input type="checkbox" id="f-ragEnabled" /><span>启用 RAG</span></label>
+        <label class="fld checkline"><input type="checkbox" id="f-ragAuto" /><span>自动检索</span></label>
+        <label class="fld checkline"><input type="checkbox" id="f-ragCite" /><span>强制引用</span></label>
+      </div>
+      <div class="fld-row">
+        <label class="fld"><span>召回块数 topK</span><input id="f-ragTopK" type="number" min="1" max="20" /></label>
+        <label class="fld"><span>注入字符上限</span><input id="f-ragMaxChars" type="number" min="800" max="20000" step="100" /></label>
+      </div>
+      <div class="fld-row">
+        <label class="fld"><span>块大小（字符）</span><input id="f-chunkSize" type="number" min="200" max="4000" step="50" /></label>
+        <label class="fld"><span>块重叠（字符）</span><input id="f-overlap" type="number" min="0" max="1000" step="10" /></label>
+      </div>
+      <div class="rag-stats" id="rag-stats">索引：—</div>
+      <div class="rag-probe">
+        <input id="rag-q" placeholder="试检索：输入关键词…" />
+        <button class="mini" id="btn-rag-search">检索</button>
+        <button class="mini" id="btn-rag-index">重建索引</button>
+      </div>
+      <pre class="receipt-view" id="rag-result" hidden></pre>
+
+      <h3>上下文压缩</h3>
+      <p class="note">历史超过当前上下文的比例时，自动把前段压成摘要（原文仍留在会话文件里），避免 27B 被旧对话拖爆上下文。</p>
+      <div class="fld-row">
+        <label class="fld checkline"><input type="checkbox" id="f-ctxEnabled" /><span>启用自动压缩</span></label>
+        <label class="fld"><span>触发比例（占上下文）</span><input id="f-ctxRatio" type="number" step="0.02" min="0.4" max="0.95" /></label>
+      </div>
+      <div class="fld-row">
+        <label class="fld"><span>保留最近消息数</span><input id="f-keepRecent" type="number" min="2" max="40" /></label>
+        <label class="fld"><span>摘要字数上限</span><input id="f-summaryChars" type="number" min="400" max="4000" step="100" /></label>
+      </div>
+      <div class="rag-stats" id="ctx-stats">上下文：—</div>
+      <div class="modal-acts">
+        <button class="btn ghost" id="btn-compress-now">立即压缩当前会话</button>
+      </div>
+
+      <h3>记忆分层</h3>
+      <p class="note">跨会话长期记忆：用户档案 / 全局记忆 / 本项目关键记忆会自动注入（按上限截断）；项目日志与每日日志不注入、按需检索。全是本地 Markdown，不占显存。</p>
+      <div class="fld-row">
+        <label class="fld checkline"><input type="checkbox" id="f-memEnabled" /><span>启用记忆</span></label>
+        <label class="fld checkline"><input type="checkbox" id="f-memDaily" /><span>每次运行后自动写每日日志</span></label>
+      </div>
+      <div class="fld-row">
+        <label class="fld"><span>自动注入字符上限</span><input id="f-memInject" type="number" min="0" max="8000" step="100" /></label>
+      </div>
+      <div class="rag-stats" id="mem-stats">记忆：—</div>
+      <div class="rag-probe">
+        <button class="mini" id="btn-mem-view">查看记忆</button>
+      </div>
+      <pre class="receipt-view" id="mem-view" hidden></pre>
+
+      <h3>MCP 服务器（JSON）</h3>
+      <textarea id="f-mcp" rows="5" spellcheck="false" placeholder='{ "demo": { "command": "node", "args": ["server.mjs"] } }'></textarea>
+
+      <h3>插件 / 技能</h3>
+      <div id="f-plugins" class="list small"></div>
+      <div id="f-skills" class="list small"></div>
+
+      <div class="modal-acts">
+        <button class="btn ghost" id="btn-reload-mcp">重连 MCP</button>
+        <button class="btn ghost" id="btn-refresh-plugins">重载插件</button>
+        <button class="btn ghost" id="btn-refresh-skills">重载技能</button>
+        <span class="spacer"></span>
+        <button class="btn primary" id="btn-save-settings">保存</button>
+      </div>
+      <p class="note" id="settings-note"></p>
+      <p class="note">配置文件：<code id="config-file">—</code></p>
+    </div>
+  </div>
+</div>
+
+<!-- 审批 -->
+<div class="modal" id="modal-approval" hidden>
+  <div class="modal-card narrow">
+    <div class="modal-hd"><span>需要批准</span></div>
+    <div class="modal-bd">
+      <p>模型要执行：</p>
+      <pre id="approval-cmd" class="receipt-view"></pre>
+      <div class="modal-acts">
+        <span class="spacer"></span>
+        <button class="btn ghost" id="btn-deny">拒绝</button>
+        <button class="btn primary" id="btn-allow">允许</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>
