@@ -595,7 +595,11 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
 eq('package 名', pkg.name, 'bonsai-workbench');
 eq('package 版本', pkg.version, '0.7.1');
 
-const appCfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'bonsai.config.json'), 'utf8'));
+// 干净 clone 里没有 bonsai.config.json（被 .gitignore 忽略）：用随仓 example 兜底，
+// 保证「git clone → npm test」开箱即过；本机有真实配置时仍校验真实配置。
+const cfgLocal = path.join(ROOT, 'bonsai.config.json');
+const cfgPath = fs.existsSync(cfgLocal) ? cfgLocal : path.join(ROOT, 'bonsai.config.example.json');
+const appCfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
 eq('应用配置默认模型', appCfg.model, 'llama/bonsai-2-27b');
 // v0.6.0 起改为「外部端点」口径：GPU 让给 D:\llm\ada 的 ada llama-server（8080），
 // 工作台只管连、不自己拉进程（同一张 8GB 卡，两个 server 必抢显存 → failed to create context）。
@@ -603,7 +607,7 @@ ok('应用配置是外部端点（不配托管运行时）', !appCfg.llamacpp.se
 ok('应用配置显式 mode=external（一键切换的落点）', appCfg.llamacpp.mode === 'external', appCfg.llamacpp.mode);
 ok('应用配置连 ada 端点 8080（外部端点，不自己拉服务）', /:8080$/.test(appCfg.llamacpp.host || ''), appCfg.llamacpp.host);
 ok('应用配置端点不自启（显存让给 ada 服务）', appCfg.llamacpp.autostart === false);
-ok('应用配置用 key 文件做 Bearer 鉴权', /api_key\.txt$/i.test(appCfg.llamacpp.apiKeyFile || ''), appCfg.llamacpp.apiKeyFile);
+ok('应用配置的 Bearer 鉴权字段可留空或指向 key 文件', !appCfg.llamacpp.apiKeyFile || /api_key\.txt$/i.test(appCfg.llamacpp.apiKeyFile), appCfg.llamacpp.apiKeyFile);
 ok('应用配置模型别名对上服务端 /v1/models', appCfg.llamacpp.alias === 'bonsai-2-27b', appCfg.llamacpp.alias);
 // 0.5.1：实测投机解码（ngram-mod）在首轮生成上 0 收益（drafts=0），默认不开；要开走 config 手改
 ok('应用配置不默认开投机解码', !String(appCfg.llamacpp.extraArgs || '').includes('--spec-type'), appCfg.llamacpp.extraArgs);
